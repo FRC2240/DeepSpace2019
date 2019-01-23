@@ -72,7 +72,7 @@ void Robot::AutonomousPeriodic() {
 void Robot::TeleopInit() {}
 
 void Robot::TeleopPeriodic() {
-  // Robot drive
+  // Robot Drive
   m_robotDrive.ArcadeDrive(m_stick.GetRawAxis(4), -m_stick.GetRawAxis(1));
 
   // Shifting
