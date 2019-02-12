@@ -25,6 +25,7 @@ class Robot : public frc::TimedRobot {
   void TeleopInit() override;
   void TeleopPeriodic() override;
   void TestPeriodic() override;
+  void LoadParameters();
 
  private:
   static const int leftLeadDeviceID = 7, rightLeadDeviceID = 3, leftFollowDeviceID = 8, rightFollowDeviceID = 4;
@@ -64,11 +65,31 @@ class Robot : public frc::TimedRobot {
   rev::CANEncoder m_climbFootEncoder = m_climbFootMotor.GetEncoder();
 
   // PID Controllers
-   rev::CANPIDController m_armPidController       = m_ArmMotor.GetPIDController();
-   rev::CANPIDController m_wristPidController     = m_wristMotor.GetPIDController();
-   rev::CANPIDController m_climbArmPidController  = m_climbArmMotor.GetPIDController();
-   rev::CANPIDController m_climbFootPidController = m_climbFootMotor.GetPIDController();
+  rev::CANPIDController m_armPidController       = m_ArmMotor.GetPIDController();
+  rev::CANPIDController m_wristPidController     = m_wristMotor.GetPIDController();
+  rev::CANPIDController m_climbArmPidController  = m_climbArmMotor.GetPIDController();
+  rev::CANPIDController m_climbFootPidController = m_climbFootMotor.GetPIDController();
 
-  // PID coefficients
-  double kP = 0.1, kI = 1e-4, kD = 1, kIz = 0, kFF = 0, kMaxOutput = 0.5, kMinOutput = -0.5;
+  // PID coefficient structure
+  struct pidCoeff {
+    double kP;
+    double kI;
+    double kD;
+    double kIz;
+    double kFF;
+    double kMinOutput;
+    double kMaxOutput;
+  };
+
+  // DETERMINE THESE EXPERIMENTALLY!!!!!!!
+  pidCoeff       m_armCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff     m_wristCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff m_climbFootCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff  m_climbArmCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+
+  // Set Points for arm/wrist positions
+  double m_armRotations[4]    {0.0, 0.0, 0.0, 0.0};
+  double m_wristRotations[4]  {0.0, 0.0, 0.0, 0.0};
+  double m_climbFootRotations = 0.0;
+  double m_climbArmRotations  = 0.0;
 };
