@@ -25,6 +25,7 @@ class Robot : public frc::TimedRobot {
   void TeleopInit() override;
   void TeleopPeriodic() override;
   void TestPeriodic() override;
+  void LoadParameters();
 
  private:
   static const int leftLeadDeviceID = 7, rightLeadDeviceID = 3, leftFollowDeviceID = 8, rightFollowDeviceID = 4;
@@ -70,5 +71,24 @@ class Robot : public frc::TimedRobot {
    rev::CANPIDController m_climbFootPidController = m_climbFootMotor.GetPIDController();
 
   // PID coefficients
-  double kP = 0.1, kI = 1e-4, kD = 1, kIz = 0, kFF = 0, kMaxOutput = 0.5, kMinOutput = -0.5;
+  struct pidCoeff {
+    double kP;
+    double kI;
+    double kD;
+    double kIz;
+    double kFF;
+    double kMinOutput;
+    double kMaxOutput;
+  };
+
+  pidCoeff       armCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff     wristCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff climbFootCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff  climbArmCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+
+  // Set Points for arm/wrist positions
+  double armRotations[4]    {0.0, 0.0, 0.0, 0.0};
+  double wristRotations[4]  {0.0, 0.0, 0.0, 0.0};
+  double climbFootRotations = 0.0;
+  double climbArmRotations  = 0.0;
 };
