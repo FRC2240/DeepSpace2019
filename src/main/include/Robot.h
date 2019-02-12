@@ -10,13 +10,11 @@
 #include <string>
 
 #include <frc/TimedRobot.h>
-#include <frc/smartdashboard/SendableChooser.h>
 #include <frc/Compressor.h>
 #include <frc/DoubleSolenoid.h>
 #include <frc/Joystick.h>
 #include <frc/drive/DifferentialDrive.h>
 #include "rev/CANSparkMax.h"
-
 
 class Robot : public frc::TimedRobot {
  public:
@@ -29,18 +27,13 @@ class Robot : public frc::TimedRobot {
   void TestPeriodic() override;
 
  private:
-  static const int leftLeadDeviceID = 3, rightLeadDeviceID = 7, leftFollowDeviceID = 4, rightFollowDeviceID = 8;
+  static const int leftLeadDeviceID = 7, rightLeadDeviceID = 3, leftFollowDeviceID = 8, rightFollowDeviceID = 4;
   static const int armDeviceID = 1, wristDeviceID = 2, climbArmDeviceID = 5, climbFootDeviceID = 6;
 
-  frc::SendableChooser<std::string> m_chooser;
-  const std::string kAutoNameDefault = "Default";
-  const std::string kAutoNameCustom = "My Auto";
-  std::string m_autoSelected;
-
   // Pneumatics
-  frc::DoubleSolenoid m_gearbox_right{0, 1};
-  frc::DoubleSolenoid m_gearbox_left{2, 3};
-  frc::DoubleSolenoid m_grabber{4, 5};
+  frc::DoubleSolenoid m_gearbox_right{3, 4};
+  frc::DoubleSolenoid m_gearbox_left{2, 5};
+  frc::DoubleSolenoid m_grabber{1, 6};
 
   frc::Compressor m_compressor;
 
@@ -51,7 +44,7 @@ class Robot : public frc::TimedRobot {
   rev::CANSparkMax m_rightFollowMotor{rightFollowDeviceID, rev::CANSparkMax::MotorType::kBrushless};
 
   // Arm and Wrist Motors
-  rev::CANSparkMax m_ArmMotor{leftLeadDeviceID, rev::CANSparkMax::MotorType::kBrushless};
+  rev::CANSparkMax m_ArmMotor{armDeviceID, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_wristMotor{wristDeviceID, rev::CANSparkMax::MotorType::kBrushless};
 
   // Climber Motors
@@ -63,4 +56,19 @@ class Robot : public frc::TimedRobot {
 
   // Joystick
   frc::Joystick m_stick{0};
+
+  // Encoders
+  rev::CANEncoder m_armEncoder       = m_ArmMotor.GetEncoder();
+  rev::CANEncoder m_wristEncoder     = m_wristMotor.GetEncoder();
+  rev::CANEncoder m_climbArmEncoder  = m_climbArmMotor.GetEncoder();
+  rev::CANEncoder m_climbFootEncoder = m_climbFootMotor.GetEncoder();
+
+  // PID Controllers
+   rev::CANPIDController m_armPidController       = m_ArmMotor.GetPIDController();
+   rev::CANPIDController m_wristPidController     = m_wristMotor.GetPIDController();
+   rev::CANPIDController m_climbArmPidController  = m_climbArmMotor.GetPIDController();
+   rev::CANPIDController m_climbFootPidController = m_climbFootMotor.GetPIDController();
+
+  // PID coefficients
+  double kP = 0.1, kI = 1e-4, kD = 1, kIz = 0, kFF = 0, kMaxOutput = 0.5, kMinOutput = -0.5;
 };

@@ -7,16 +7,10 @@
 
 #include "Robot.h"
 #include "log.h"
-
 #include <iostream>
-
 #include <frc/smartdashboard/SmartDashboard.h>
 
 void Robot::RobotInit() {
-  m_chooser.SetDefaultOption(kAutoNameDefault, kAutoNameDefault);
-  m_chooser.AddOption(kAutoNameCustom, kAutoNameCustom);
-  frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
-
   m_compressor.Start();
 	m_gearbox_right.Set(frc::DoubleSolenoid::Value::kOff);
 	m_gearbox_left.Set(frc::DoubleSolenoid::Value::kOff);
@@ -24,6 +18,24 @@ void Robot::RobotInit() {
 
   m_leftFollowMotor.Follow(m_leftLeadMotor);
   m_rightFollowMotor.Follow(m_rightLeadMotor);
+  m_leftLeadMotor.SetIdleMode(rev::CANSparkMax::IdleMode::kCoast);
+  m_rightLeadMotor.SetIdleMode(rev::CANSparkMax::IdleMode::kCoast);
+
+  // set PID coefficients
+  /*m_armPidController.SetP(kP);
+  m_armPidController.SetI(kI);
+  m_armPidController.SetD(kD);
+  m_armPidController.SetIZone(kIz);
+  m_armPidController.SetFF(kFF);
+  m_armPidController.SetOutputRange(kMinOutput, kMaxOutput);*/
+
+  // display PID coefficients on SmartDashboard
+  frc::SmartDashboard::PutNumber("P Gain", kP);
+  frc::SmartDashboard::PutNumber("I Gain", kI);
+  frc::SmartDashboard::PutNumber("D Gain", kD);
+  frc::SmartDashboard::PutNumber("Max Output", kMaxOutput);
+  frc::SmartDashboard::PutNumber("Min Output", kMinOutput);
+  frc::SmartDashboard::PutNumber("Set Rotations", 0);
 }
 
 /**
@@ -49,31 +61,47 @@ void Robot::RobotPeriodic() {}
  * l.
  */
 void Robot::AutonomousInit() {
-  m_autoSelected = m_chooser.GetSelected();
-  // m_autoSelected = SmartDashboard::GetString(
-  //     "Auto Selector", kAutoNameDefault);
-  std::cout << "Auto selected: " << m_autoSelected << std::endl;
-
-  if (m_autoSelected == kAutoNameCustom) {
-    // Custom Auto goes here
-  } else {
-    // Default Auto goes here
-  }
+ 
 }
 
 void Robot::AutonomousPeriodic() {
-  if (m_autoSelected == kAutoNameCustom) {
-    // Custom Auto goes here
-  } else {
-    // Default Auto goes here
+
+}
+
+void Robot::TeleopInit() {
+  // read PID coefficients from SmartDashboard
+  double p = frc::SmartDashboard::GetNumber("P Gain", 0);
+  double i = frc::SmartDashboard::GetNumber("I Gain", 0);
+  double d = frc::SmartDashboard::GetNumber("D Gain", 0);
+  double max = frc::SmartDashboard::GetNumber("Max Output", 0);
+  double min = frc::SmartDashboard::GetNumber("Min Output", 0);
+
+  // if PID coefficients on SmartDashboard have changed, write new values to controller
+  if ((p != kP)) { m_wristPidController.SetP(p); kP = p; }
+  if ((i != kI)) { m_wristPidController.SetI(i); kI = i; }
+  if ((d != kD)) { m_wristPidController.SetD(d); kD = d; }
+  if ((max != kMaxOutput) || (min != kMinOutput)) { 
+    m_wristPidController.SetOutputRange(min, max); 
+    kMinOutput = min; kMaxOutput = max; 
   }
 }
 
-void Robot::TeleopInit() {}
-
 void Robot::TeleopPeriodic() {
   // Robot Drive
-  m_robotDrive.ArcadeDrive(m_stick.GetRawAxis(4), -m_stick.GetRawAxis(1));
+  double move   = m_stick.GetRawAxis(1);
+  double rotate = m_stick.GetRawAxis(4);
+
+  // Deadband
+  if (fabs(move) < 0.15) {
+    move = 0.0;
+  }
+
+  if (fabs(rotate) < 0.15) {
+    rotate = 0.0;
+  }
+
+  m_robotDrive.ArcadeDrive(move, rotate);
+  //m_robotDrive.ArcadeDrive(m_stick.GetRawAxis(1), m_stick.GetRawAxis(4));
 
   // Shifting
   if (m_stick.GetRawButton(5)) {
@@ -131,6 +159,14 @@ void Robot::TeleopPeriodic() {
   } else {
     m_wristMotor.Set(0.0);
   }
+
+  double rotations = frc::SmartDashboard::GetNumber("Set Rotations", 0);
+  //m_wristPidController.SetReference(rotations, rev::ControlType::kPosition);
+
+  LOGGER(INFO) << "  Arm Encoder: " << m_armEncoder.GetPosition();
+  LOGGER(INFO) << "Wrist Encoder: " << m_wristEncoder.GetPosition();
+  LOGGER(INFO) << "  C/A Encoder: " << m_climbArmEncoder.GetPosition();
+  LOGGER(INFO) << "  C/F Encoder: " << m_climbFootEncoder.GetPosition();
 }
 
 
