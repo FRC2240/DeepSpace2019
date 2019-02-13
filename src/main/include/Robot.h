@@ -84,7 +84,7 @@ class Robot : public frc::TimedRobot {
   };
 
   // DETERMINE THESE EXPERIMENTALLY!!!!!!!
-  pidCoeff       m_armCoeff {0.03, 0.0, 0.7, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff       m_armCoeff {0.02, 0.0, 0.7, 0.0, 0.0, -1.0, 1.0};
   pidCoeff     m_wristCoeff {0.13, 0.0, 0.0, 0.0, 0.0, -1.0, 1.0};
   pidCoeff m_climbFootCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
   pidCoeff  m_climbArmCoeff {0.05, 0.0, 0.0, 0.0, 0.0, -1.0, 1.0};
