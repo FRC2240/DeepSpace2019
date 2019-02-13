@@ -18,46 +18,9 @@ void Robot::RobotInit() {
 
   m_leftFollowMotor.Follow(m_leftLeadMotor);
   m_rightFollowMotor.Follow(m_rightLeadMotor);
-  m_leftLeadMotor.SetIdleMode(rev::CANSparkMax::IdleMode::kCoast);
-  m_rightLeadMotor.SetIdleMode(rev::CANSparkMax::IdleMode::kCoast);
 
-  // display PID coefficients on SmartDashboard
-  frc::SmartDashboard::PutNumber("Arm P Gain",              m_armCoeff.kP);
-  frc::SmartDashboard::PutNumber("Arm I Gain",              m_armCoeff.kI);
-  frc::SmartDashboard::PutNumber("Arm D Gain",              m_armCoeff.kD);
-  frc::SmartDashboard::PutNumber("Arm Max Output",          m_armCoeff.kMaxOutput);
-  frc::SmartDashboard::PutNumber("Arm Min Output",          m_armCoeff.kMinOutput);
-
-  frc::SmartDashboard::PutNumber("Wrist P Gain",            m_wristCoeff.kP);
-  frc::SmartDashboard::PutNumber("Wrist I Gain",            m_wristCoeff.kI);
-  frc::SmartDashboard::PutNumber("Wrist D Gain",            m_wristCoeff.kD);
-  frc::SmartDashboard::PutNumber("Wrist Max Output",        m_wristCoeff.kMaxOutput);
-  frc::SmartDashboard::PutNumber("Wrist Min Output",        m_wristCoeff.kMinOutput);
-
-  frc::SmartDashboard::PutNumber("Climb Arm P Gain",        m_climbArmCoeff.kP);
-  frc::SmartDashboard::PutNumber("Climb Arm I Gain",        m_climbArmCoeff.kI);
-  frc::SmartDashboard::PutNumber("Climb Arm D Gain",        m_climbArmCoeff.kD);
-  frc::SmartDashboard::PutNumber("Climb Arm Max Output",    m_climbArmCoeff.kMaxOutput);
-  frc::SmartDashboard::PutNumber("Climb Arm Min Output",    m_climbArmCoeff.kMinOutput);
-
-  frc::SmartDashboard::PutNumber("Climb Foot P Gain",       m_climbFootCoeff.kP);
-  frc::SmartDashboard::PutNumber("Climb Foot I Gain",       m_climbFootCoeff.kI);
-  frc::SmartDashboard::PutNumber("Climb Foot D Gain",       m_climbFootCoeff.kD);
-  frc::SmartDashboard::PutNumber("Climb Foot Max Output",   m_climbFootCoeff.kMaxOutput);
-  frc::SmartDashboard::PutNumber("Climb Foot Min Output",   m_climbFootCoeff.kMinOutput);
-
-  frc::SmartDashboard::PutNumber("Arm Rotations Level 0",   m_armRotations[0]);
-  frc::SmartDashboard::PutNumber("Arm Rotations Level 1",   m_armRotations[1]);
-  frc::SmartDashboard::PutNumber("Arm Rotations Level 2",   m_armRotations[2]);
-  frc::SmartDashboard::PutNumber("Arm Rotations Level 3",   m_armRotations[3]);
-
-  frc::SmartDashboard::PutNumber("Wrist Rotations Level 0", m_wristRotations[0]);
-  frc::SmartDashboard::PutNumber("Wrist Rotations Level 1", m_wristRotations[1]);
-  frc::SmartDashboard::PutNumber("Wrist Rotations Level 2", m_wristRotations[2]);
-  frc::SmartDashboard::PutNumber("Wrist Rotations Level 3", m_wristRotations[3]);
-
-  frc::SmartDashboard::PutNumber("Climb Foot Rotations",    m_climbFootRotations);
-  frc::SmartDashboard::PutNumber("Climb Arm Rotations",     m_climbArmRotations);
+  InitializeDashboard();
+  InitializePIDControllers();
 }
 
 /**
@@ -83,7 +46,7 @@ void Robot::RobotPeriodic() {}
  * l.
  */
 void Robot::AutonomousInit() {
-  LoadParameters();
+  ReadDashboard();
 }
 
 void Robot::AutonomousPeriodic() {
@@ -91,7 +54,9 @@ void Robot::AutonomousPeriodic() {
 }
 
 void Robot::TeleopInit() {
-  LoadParameters();
+  ReadDashboard();
+  m_armPidController.SetReference(m_armRotations[0], rev::ControlType::kPosition);
+  m_wristPidController.SetReference(m_wristRotations[0], rev::ControlType::kPosition);
 }
 
 void Robot::TeleopPeriodic() {
@@ -171,7 +136,77 @@ void Robot::TeleopPeriodic() {
 
 void Robot::TestPeriodic() {}
 
-void Robot::LoadParameters () {
+void Robot::InitializePIDControllers() {
+  m_armPidController.SetP(m_armCoeff.kP);
+  m_armPidController.SetI(m_armCoeff.kI);
+  m_armPidController.SetD(m_armCoeff.kD);
+  m_armPidController.SetIZone(m_armCoeff.kIz);
+  m_armPidController.SetFF(m_armCoeff.kFF);
+  m_armPidController.SetOutputRange(m_armCoeff.kMinOutput, m_armCoeff.kMaxOutput);
+
+  m_wristPidController.SetP(m_wristCoeff.kP);
+  m_wristPidController.SetI(m_wristCoeff.kI);
+  m_wristPidController.SetD(m_wristCoeff.kD);
+  m_wristPidController.SetIZone(m_wristCoeff.kIz);
+  m_wristPidController.SetFF(m_wristCoeff.kFF);
+  m_wristPidController.SetOutputRange(m_wristCoeff.kMinOutput, m_wristCoeff.kMaxOutput);
+
+  m_climbArmPidController.SetP(m_climbArmCoeff.kP);
+  m_climbArmPidController.SetI(m_climbArmCoeff.kI);
+  m_climbArmPidController.SetD(m_climbArmCoeff.kD);
+  m_climbArmPidController.SetIZone(m_climbArmCoeff.kIz);
+  m_climbArmPidController.SetFF(m_climbArmCoeff.kFF);
+  m_climbArmPidController.SetOutputRange(m_climbArmCoeff.kMinOutput, m_climbArmCoeff.kMaxOutput);
+
+  m_climbFootPidController.SetP(m_climbFootCoeff.kP);
+  m_climbFootPidController.SetI(m_climbFootCoeff.kI);
+  m_climbFootPidController.SetD(m_climbFootCoeff.kD);
+  m_climbFootPidController.SetIZone(m_climbFootCoeff.kIz);
+  m_climbFootPidController.SetFF(m_climbFootCoeff.kFF);
+  m_climbFootPidController.SetOutputRange(m_climbFootCoeff.kMinOutput, m_climbFootCoeff.kMaxOutput);
+}
+
+void Robot::InitializeDashboard() {
+  // display PID coefficients on SmartDashboard
+  frc::SmartDashboard::PutNumber("Arm P Gain",              m_armCoeff.kP);
+  frc::SmartDashboard::PutNumber("Arm I Gain",              m_armCoeff.kI);
+  frc::SmartDashboard::PutNumber("Arm D Gain",              m_armCoeff.kD);
+  frc::SmartDashboard::PutNumber("Arm Max Output",          m_armCoeff.kMaxOutput);
+  frc::SmartDashboard::PutNumber("Arm Min Output",          m_armCoeff.kMinOutput);
+
+  frc::SmartDashboard::PutNumber("Wrist P Gain",            m_wristCoeff.kP);
+  frc::SmartDashboard::PutNumber("Wrist I Gain",            m_wristCoeff.kI);
+  frc::SmartDashboard::PutNumber("Wrist D Gain",            m_wristCoeff.kD);
+  frc::SmartDashboard::PutNumber("Wrist Max Output",        m_wristCoeff.kMaxOutput);
+  frc::SmartDashboard::PutNumber("Wrist Min Output",        m_wristCoeff.kMinOutput);
+
+  frc::SmartDashboard::PutNumber("Climb Arm P Gain",        m_climbArmCoeff.kP);
+  frc::SmartDashboard::PutNumber("Climb Arm I Gain",        m_climbArmCoeff.kI);
+  frc::SmartDashboard::PutNumber("Climb Arm D Gain",        m_climbArmCoeff.kD);
+  frc::SmartDashboard::PutNumber("Climb Arm Max Output",    m_climbArmCoeff.kMaxOutput);
+  frc::SmartDashboard::PutNumber("Climb Arm Min Output",    m_climbArmCoeff.kMinOutput);
+  
+  frc::SmartDashboard::PutNumber("Climb Foot P Gain",       m_climbFootCoeff.kP);
+  frc::SmartDashboard::PutNumber("Climb Foot I Gain",       m_climbFootCoeff.kI);
+  frc::SmartDashboard::PutNumber("Climb Foot D Gain",       m_climbFootCoeff.kD);
+  frc::SmartDashboard::PutNumber("Climb Foot Max Output",   m_climbFootCoeff.kMaxOutput);
+  frc::SmartDashboard::PutNumber("Climb Foot Min Output",   m_climbFootCoeff.kMinOutput);
+  
+  frc::SmartDashboard::PutNumber("Arm Rotations Level 0",   m_armRotations[0]);
+  frc::SmartDashboard::PutNumber("Arm Rotations Level 1",   m_armRotations[1]);
+  frc::SmartDashboard::PutNumber("Arm Rotations Level 2",   m_armRotations[2]);
+  frc::SmartDashboard::PutNumber("Arm Rotations Level 3",   m_armRotations[3]);
+
+  frc::SmartDashboard::PutNumber("Wrist Rotations Level 0", m_wristRotations[0]);
+  frc::SmartDashboard::PutNumber("Wrist Rotations Level 1", m_wristRotations[1]);
+  frc::SmartDashboard::PutNumber("Wrist Rotations Level 2", m_wristRotations[2]);
+  frc::SmartDashboard::PutNumber("Wrist Rotations Level 3", m_wristRotations[3]);
+
+  frc::SmartDashboard::PutNumber("Climb Foot Rotations",    m_climbFootRotations);
+  frc::SmartDashboard::PutNumber("Climb Arm Rotations",     m_climbArmRotations);
+}
+
+void Robot::ReadDashboard () {
   double p, i, d, min, max;
 
   // read PID coefficients from SmartDashboard

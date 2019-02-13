@@ -25,7 +25,9 @@ class Robot : public frc::TimedRobot {
   void TeleopInit() override;
   void TeleopPeriodic() override;
   void TestPeriodic() override;
-  void LoadParameters();
+  void InitializeDashboard();
+  void InitializePIDControllers();
+  void ReadDashboard();
 
  private:
   static const int leftLeadDeviceID = 7, rightLeadDeviceID = 3, leftFollowDeviceID = 8, rightFollowDeviceID = 4;
@@ -82,14 +84,14 @@ class Robot : public frc::TimedRobot {
   };
 
   // DETERMINE THESE EXPERIMENTALLY!!!!!!!
-  pidCoeff       m_armCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
-  pidCoeff     m_wristCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff       m_armCoeff {0.03, 0.0, 0.7, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff     m_wristCoeff {0.13, 0.0, 0.0, 0.0, 0.0, -1.0, 1.0};
   pidCoeff m_climbFootCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
-  pidCoeff  m_climbArmCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
+  pidCoeff  m_climbArmCoeff {0.05, 0.0, 0.0, 0.0, 0.0, -1.0, 1.0};
 
   // Set Points for arm/wrist positions
-  double m_armRotations[4]    {0.0, 0.0, 0.0, 0.0};
-  double m_wristRotations[4]  {0.0, 0.0, 0.0, 0.0};
+  double m_armRotations[4]    {0.0, 7.4, 19.6, 41.3};
+  double m_wristRotations[4]  {0.0, 36.6, 53.5, 22.5};
   double m_climbFootRotations = 0.0;
   double m_climbArmRotations  = 0.0;
 };
