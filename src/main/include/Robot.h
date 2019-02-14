@@ -90,8 +90,11 @@ class Robot : public frc::TimedRobot {
   pidCoeff  m_climbArmCoeff {0.05, 0.0, 0.0, 0.0, 0.0, -1.0, 1.0};
 
   // Set Points for arm/wrist positions
-  double m_armRotations[4]    {0.0, 7.4, 19.6, 41.3};
+  double m_armRotations[4]    {0.0, 15.0, 44.0, 93.0};
   double m_wristRotations[4]  {0.0, 36.6, 53.5, 22.5};
-  double m_climbFootRotations = 0.0;
-  double m_climbArmRotations  = 0.0;
+  //double m_climbFootRotations = 0.0;
+  double m_climbFootRotations = 138.0;
+  //double m_climbArmRotations  = 0.0;
+  double m_climbArmRotations  = 74.0;
+
 };

@@ -96,18 +96,36 @@ void Robot::TeleopPeriodic() {
 		m_grabber.Set(frc::DoubleSolenoid::Value::kReverse);
 	} 
 
-  // Climbing
-  if (m_stick.GetRawAxis(2) > 0.5) {
-    m_climbArmPidController.SetReference(m_climbArmRotations, rev::ControlType::kPosition);
-    LOGGER(INFO) << "Climb Arm";
-  }
+  // // Climbing
+  // if (m_stick.GetRawAxis(2) > 0.5) {
+  //   m_climbArmPidController.SetReference(m_climbArmRotations, rev::ControlType::kPosition);
+  //   LOGGER(INFO) << "Climb Arm";
+  // }
 
-  if (m_stick.GetRawAxis(3)) {
-    LOGGER(INFO) << "Climb Foot";
-    m_climbFootMotor.Set(m_stick.GetRawAxis(3));
-  } else {
-    m_climbFootMotor.Set(0.0);
-  }
+  // if (m_stick.GetRawAxis(3)) {
+  //   LOGGER(INFO) << "Climb Foot";
+  //   m_climbFootMotor.Set(m_stick.GetRawAxis(3));
+  // } else {
+  //   m_climbFootMotor.Set(0.0);
+  // }
+if(m_stick.GetRawAxis(2) > 0.5 && (m_climbFootEncoder.GetPosition() <= 132)){
+
+m_climbArmPidController.SetReference(m_climbArmRotations, rev::ControlType::kPosition);
+
+
+if(m_climbArmEncoder.GetPosition() >= 72) {
+  m_climbFootPidController.SetReference(m_climbFootRotations, rev::ControlType::kPosition);
+}
+
+}
+
+if(m_stick.GetRawAxis(2) > 0.5 && (m_climbFootEncoder.GetPosition() > 130)){
+  m_climbFootPidController.SetReference(m_climbFootRotations, rev::ControlType::kPosition);
+   m_climbArmPidController.SetReference(0, rev::ControlType::kPosition);
+}
+
+
+
 
   // Arm/Wrist Positioning
   if (m_stick.GetRawButton(1)) {
@@ -284,6 +302,7 @@ void Robot::ReadDashboard () {
 
   m_climbFootRotations = frc::SmartDashboard::GetNumber("Climb Foot Rotations", 0);
   m_climbArmRotations  = frc::SmartDashboard::GetNumber("Climb Arm Rotations", 0);
+  //m_climbArmRotations  = frc::SmartDashboard::GetNumber("Climb Arm Rotations", 74);
 }
 
 #ifndef RUNNING_FRC_TESTS
