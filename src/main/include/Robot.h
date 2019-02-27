@@ -15,6 +15,8 @@
 #include <frc/Joystick.h>
 #include <frc/drive/DifferentialDrive.h>
 #include "rev/CANSparkMax.h"
+#include <networktables/NetworkTable.h>
+#include <networktables/NetworkTableInstance.h>
 
 class Robot : public frc::TimedRobot {
  public:
@@ -28,10 +30,18 @@ class Robot : public frc::TimedRobot {
   void InitializeDashboard();
   void InitializePIDControllers();
   void ReadDashboard();
+  double LimelightTracking();
+  void Run();
 
  private:
   static const int leftLeadDeviceID = 7, rightLeadDeviceID = 3, leftFollowDeviceID = 8, rightFollowDeviceID = 4;
   static const int armDeviceID = 1, wristDeviceID = 2, climbArmDeviceID = 5, climbFootDeviceID = 6;
+
+  // Network Table
+  std::shared_ptr<NetworkTable> m_table = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
+
+  // Targeting state
+  bool m_IsTargeting = false;
 
   // Pneumatics
   frc::DoubleSolenoid m_gearbox_right{3, 4};
@@ -89,12 +99,12 @@ class Robot : public frc::TimedRobot {
   pidCoeff m_climbFootCoeff {0.1, 0.0, 1.0, 0.0, 0.0, -1.0, 1.0};
   pidCoeff  m_climbArmCoeff {0.05, 0.0, 0.0, 0.0, 0.0, -1.0, 1.0};
 
-  // Set Points for arm/wrist positions
-  double m_armRotations[4]    {0.0, 15.0, 44.0, 93.0};
-  double m_wristRotations[4]  {0.0, 36.6, 53.5, 22.5};
-  //double m_climbFootRotations = 0.0;
-  double m_climbFootRotations = 138.0;
-  //double m_climbArmRotations  = 0.0;
-  double m_climbArmRotations  = 74.0;
+  // Smart-Motion coefficients for the arm
+  double m_armMaxVel = 2000, m_armMinVel = 0, m_armMaxAcc = 1500, m_armAllErr = 0;
 
+  // Set Points for arm/wrist positions
+  double m_armRotations[4]    {0.0, 15.0, 46.5, 93.0};
+  double m_wristRotations[4]  {0.0, 28.0, 46.0, 10.0};
+  double m_climbFootRotations = 138.0;
+  double m_climbArmRotations  = 74.0;
 };
