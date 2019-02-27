@@ -9,8 +9,6 @@
 #include "log.h"
 #include <iostream>
 #include <frc/smartdashboard/SmartDashboard.h>
-//#include <networktables/NetworkTable.h>
-//#include <networktables/NetworkTableInstance.h>
 
 double clamp(double in, double minval, double maxval)
 {
