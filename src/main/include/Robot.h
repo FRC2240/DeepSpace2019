@@ -38,7 +38,8 @@ class Robot : public frc::TimedRobot {
   static const int armDeviceID = 1, wristDeviceID = 2, climbArmDeviceID = 5, climbFootDeviceID = 6;
 
   // Network Table
-  std::shared_ptr<NetworkTable> m_table = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
+  std::shared_ptr<NetworkTable> m_table = nt::NetworkTableInstance::GetDefault().GetTable("limelight-front");
+  std::shared_ptr<NetworkTable> m_table2 = nt::NetworkTableInstance::GetDefault().GetTable("limelight-rear");
 
   // Targeting state
   bool m_IsTargeting = false;

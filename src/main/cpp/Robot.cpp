@@ -34,6 +34,9 @@ void Robot::RobotInit() {
   m_wristEncoder.SetPosition(0.0);
   m_climbArmEncoder.SetPosition(0.0);
   m_climbFootEncoder.SetPosition(0.0);
+
+  // Set camera for normal driving 
+  m_table->PutNumber("pipeline", 1);
 }
 
 /**
@@ -80,18 +83,17 @@ void Robot::Run()
 {
   // Drive input from joystick
   double move   = m_stick.GetRawAxis(1);
-  double rotate = m_stick.GetRawAxis(4);
+  double rotate = .75*m_stick.GetRawAxis(4);
 
   // Targeting or Driving?
   if ((m_stick.GetRawAxis(2) > 0.75) && (m_stick.GetRawAxis(3) > 0.75)) {
     // Targeting
     m_table->PutNumber("pipeline", 0);
     m_IsTargeting = true;
-    move = 0.25;
+    move = -0.55;
     rotate = LimelightTracking();
   } else {
     // Driving
-
     if (m_IsTargeting) {
       // Stopped targeting, toggle grabber
       m_IsTargeting = false;
@@ -167,22 +169,21 @@ if(m_stick.GetRawAxis(2) > 0.5 && (m_climbFootEncoder.GetPosition() > 130)){
 }
 */
 
-
   // Arm/Wrist Positioning
   if (m_stick.GetRawButton(1)) {
-    m_armPidController.SetReference(m_armRotations[0], rev::ControlType::kSmartMotion);
+    m_armPidController.SetReference(m_armRotations[0], rev::ControlType::kPosition);
     m_wristPidController.SetReference(m_wristRotations[0], rev::ControlType::kPosition);
     LOGGER(INFO) << "Level 0";
   } else if (m_stick.GetRawButton(2)) {
-    m_armPidController.SetReference(m_armRotations[1], rev::ControlType::kSmartMotion);
+    m_armPidController.SetReference(m_armRotations[1], rev::ControlType::kPosition);
     m_wristPidController.SetReference(m_wristRotations[1], rev::ControlType::kPosition);
     LOGGER(INFO) << "Level 1";
   } else if (m_stick.GetRawButton(3)) {
-    m_armPidController.SetReference(m_armRotations[2], rev::ControlType::kSmartMotion);
+    m_armPidController.SetReference(m_armRotations[2], rev::ControlType::kPosition);
     m_wristPidController.SetReference(m_wristRotations[2], rev::ControlType::kPosition);
     LOGGER(INFO) << "Level 2";
   } else if (m_stick.GetRawButton(4)) {
-    m_armPidController.SetReference(m_armRotations[3], rev::ControlType::kSmartMotion);
+    m_armPidController.SetReference(m_armRotations[3], rev::ControlType::kPosition);
     m_wristPidController.SetReference(m_wristRotations[3], rev::ControlType::kPosition);
     LOGGER(INFO) << "Level 3";
   }
@@ -200,7 +201,7 @@ double Robot::LimelightTracking()
   // Proportional Steering Constant:
   // If your robot doesn't turn fast enough toward the target, make this number bigger
   // If your robot oscillates (swings back and forth past the target) make this smaller
-  const double STEER_K = 0.05;
+  const double STEER_K = 0.3;
 
   const double MAX_STEER = 0.5;
 
@@ -227,10 +228,10 @@ void Robot::InitializePIDControllers() {
   m_armPidController.SetFF(m_armCoeff.kFF);
   m_armPidController.SetOutputRange(m_armCoeff.kMinOutput, m_armCoeff.kMaxOutput);
 
-  m_armPidController.SetSmartMotionMaxVelocity(m_armMaxVel);
-  m_armPidController.SetSmartMotionMinOutputVelocity(m_armMinVel);
-  m_armPidController.SetSmartMotionMaxAccel(m_armMaxAcc);
-  m_armPidController.SetSmartMotionAllowedClosedLoopError(m_armAllErr);
+  //m_armPidController.SetSmartMotionMaxVelocity(m_armMaxVel);
+  //m_armPidController.SetSmartMotionMinOutputVelocity(m_armMinVel);
+  //m_armPidController.SetSmartMotionMaxAccel(m_armMaxAcc);
+  //m_armPidController.SetSmartMotionAllowedClosedLoopError(m_armAllErr);
 
   m_wristPidController.SetP(m_wristCoeff.kP);
   m_wristPidController.SetI(m_wristCoeff.kI);
@@ -309,10 +310,10 @@ void Robot::ReadDashboard () {
   d   = frc::SmartDashboard::GetNumber("Arm D Gain", 0);
   min = frc::SmartDashboard::GetNumber("Arm Min Output", 0);
   max = frc::SmartDashboard::GetNumber("Arm Max Output", 0);
-  double maxV = frc::SmartDashboard::GetNumber("Arm Max Velocity", 0);
-  double minV = frc::SmartDashboard::GetNumber("Arm Min Velocity", 0);
-  double maxA = frc::SmartDashboard::GetNumber("Arm Max Acceleration", 0);
-  double allE = frc::SmartDashboard::GetNumber("Arm Allowed Closed Loop Error", 0);
+  //double maxV = frc::SmartDashboard::GetNumber("Arm Max Velocity", 0);
+  //double minV = frc::SmartDashboard::GetNumber("Arm Min Velocity", 0);
+  //double maxA = frc::SmartDashboard::GetNumber("Arm Max Acceleration", 0);
+  //double allE = frc::SmartDashboard::GetNumber("Arm Allowed Closed Loop Error", 0);
 
   // If PID coefficients on SmartDashboard have changed, write new values to controller
   if ((p != m_armCoeff.kP)) { m_armPidController.SetP(p); m_armCoeff.kP = p; }
@@ -322,10 +323,10 @@ void Robot::ReadDashboard () {
     m_armPidController.SetOutputRange(min, max); 
     m_armCoeff.kMinOutput = min; m_armCoeff.kMaxOutput = max; 
   }
-  if((maxV != m_armMaxVel)) { m_armPidController.SetSmartMotionMaxVelocity(maxV); m_armMaxVel = maxV; }
-  if((minV != m_armMinVel)) { m_armPidController.SetSmartMotionMinOutputVelocity(minV); m_armMinVel = minV; }
-  if((maxA != m_armMaxAcc)) { m_armPidController.SetSmartMotionMaxAccel(maxA); m_armMaxAcc = maxA; }
-  if((allE != m_armAllErr)) { m_armPidController.SetSmartMotionAllowedClosedLoopError(allE); allE = m_armAllErr; }
+  //if((maxV != m_armMaxVel)) { m_armPidController.SetSmartMotionMaxVelocity(maxV); m_armMaxVel = maxV; }
+  //if((minV != m_armMinVel)) { m_armPidController.SetSmartMotionMinOutputVelocity(minV); m_armMinVel = minV; }
+  //if((maxA != m_armMaxAcc)) { m_armPidController.SetSmartMotionMaxAccel(maxA); m_armMaxAcc = maxA; }
+  //if((allE != m_armAllErr)) { m_armPidController.SetSmartMotionAllowedClosedLoopError(allE); allE = m_armAllErr; }
 
   // read PID coefficients from SmartDashboard
   p   = frc::SmartDashboard::GetNumber("Wrist P Gain", 0);
