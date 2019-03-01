@@ -34,9 +34,6 @@ void Robot::RobotInit() {
   m_wristEncoder.SetPosition(0.0);
   m_climbArmEncoder.SetPosition(0.0);
   m_climbFootEncoder.SetPosition(0.0);
-
-  // Set camera for normal driving 
-  m_table->PutNumber("pipeline", 1);
 }
 
 /**
@@ -66,7 +63,7 @@ void Robot::AutonomousInit() {
 }
 
 void Robot::AutonomousPeriodic() {
-  Run();
+  OperatorControl();
 }
 
 void Robot::TeleopInit() {
@@ -76,22 +73,25 @@ void Robot::TeleopInit() {
 }
 
 void Robot::TeleopPeriodic() {
-  Run();
+  OperatorControl();
 }
 
-void Robot::Run()
+void Robot::OperatorControl()
 {
   // Drive input from joystick
   double move   = m_stick.GetRawAxis(1);
-  double rotate = .75*m_stick.GetRawAxis(4);
+  double rotate = 0.75*m_stick.GetRawAxis(4);
 
   // Targeting or Driving?
   if ((m_stick.GetRawAxis(2) > 0.75) && (m_stick.GetRawAxis(3) > 0.75)) {
     // Targeting
-    m_table->PutNumber("pipeline", 0);
+    m_limelightFront->PutNumber("pipeline", 0);
+    m_limelightRear->PutNumber("pipeline", 0);
     m_IsTargeting = true;
-    move = -0.55;
-    rotate = LimelightTracking();
+
+    DoLimelightTracking();
+    move   = m_limelightDriveCmd;
+    rotate = m_limelightTurnCmd;
   } else {
     // Driving
     if (m_IsTargeting) {
@@ -105,7 +105,8 @@ void Robot::Run()
       }
     }
 
-    m_table->PutNumber("pipeline", 1);
+    m_limelightFront->PutNumber("pipeline", 1);
+    m_limelightRear->PutNumber("pipeline", 1);
 
     // Deadband
     if (fabs(move) < 0.15) {
@@ -173,19 +174,19 @@ if(m_stick.GetRawAxis(2) > 0.5 && (m_climbFootEncoder.GetPosition() > 130)){
   if (m_stick.GetRawButton(1)) {
     m_armPidController.SetReference(m_armRotations[0], rev::ControlType::kPosition);
     m_wristPidController.SetReference(m_wristRotations[0], rev::ControlType::kPosition);
-    LOGGER(INFO) << "Level 0";
+    LOGGER(INFO) << "Level 0 " << m_wristRotations[0];
   } else if (m_stick.GetRawButton(2)) {
     m_armPidController.SetReference(m_armRotations[1], rev::ControlType::kPosition);
     m_wristPidController.SetReference(m_wristRotations[1], rev::ControlType::kPosition);
-    LOGGER(INFO) << "Level 1";
+    LOGGER(INFO) << "Level 1 " << m_wristRotations[1];
   } else if (m_stick.GetRawButton(3)) {
     m_armPidController.SetReference(m_armRotations[2], rev::ControlType::kPosition);
     m_wristPidController.SetReference(m_wristRotations[2], rev::ControlType::kPosition);
-    LOGGER(INFO) << "Level 2";
+    LOGGER(INFO) << "Level 2 " << m_wristRotations[2];
   } else if (m_stick.GetRawButton(4)) {
     m_armPidController.SetReference(m_armRotations[3], rev::ControlType::kPosition);
     m_wristPidController.SetReference(m_wristRotations[3], rev::ControlType::kPosition);
-    LOGGER(INFO) << "Level 3";
+    LOGGER(INFO) << "Level 3 " << m_wristRotations[3];
   }
 
   LOGGER(INFO) << "  Arm Encoder: " << m_armEncoder.GetPosition();
@@ -196,28 +197,59 @@ if(m_stick.GetRawAxis(2) > 0.5 && (m_climbFootEncoder.GetPosition() > 130)){
 
 void Robot::TestPeriodic() {}
 
-double Robot::LimelightTracking()
+bool Robot::DoLimelightTracking()
 {
   // Proportional Steering Constant:
-  // If your robot doesn't turn fast enough toward the target, make this number bigger
-  // If your robot oscillates (swings back and forth past the target) make this smaller
-  const double STEER_K = 0.3;
-
+  const double STEER_K = 0.2;
   const double MAX_STEER = 0.5;
+  const double DRIVE_K = 0.55;
 
-  double tx = m_table->GetNumber("tx",0.0);
-  double tv = m_table->GetNumber("tv",0.0);
+  // Front camera
+  double txFront = m_limelightFront->GetNumber("tx", 0.0); // horizontal offset
+  double tvFront = m_limelightFront->GetNumber("tv", 0.0); // target valid?
+  double taFront = m_limelightFront->GetNumber("ta", 0.0); // target area
+  // Rear camera
+  double txRear  = m_limelightRear->GetNumber("tx", 0.0); // horizontal offset
+  double tvRear  = m_limelightRear->GetNumber("tv", 0.0); // target valid?
+  double taRear  = m_limelightRear->GetNumber("ta", 0.0); // target area
 
-  double limelightTurnCmd = 0.0;
+  m_limelightTurnCmd  = 0.0;
+  m_limelightDriveCmd = 0.0;
 
-  if (tv > 0.0)
-  {
-        // Proportional steering
-        limelightTurnCmd = tx*STEER_K;
-        limelightTurnCmd = clamp(limelightTurnCmd,-MAX_STEER, MAX_STEER);
-  }
+  if ((tvFront > 0.0) && (tvRear < 1.0)) {
+    // Front target only detected
+    m_limelightDriveCmd = -DRIVE_K;
+    m_limelightTurnCmd  = txFront*STEER_K;
+    m_limelightTurnCmd  = clamp(m_limelightTurnCmd, -MAX_STEER, MAX_STEER);
+    LOGGER(INFO) << "Target at Front";
+    return true;
 
-  return limelightTurnCmd;
+  } else if ((tvFront < 1.0) && (tvRear > 0.0)) {
+    // Rear target only detected
+    m_limelightDriveCmd = DRIVE_K;
+    m_limelightTurnCmd  = txRear*STEER_K;
+    m_limelightTurnCmd  = clamp(m_limelightTurnCmd, -MAX_STEER, MAX_STEER);
+    LOGGER(INFO) << "Target at Rear";
+    return true;
+
+  } else if ((tvFront > 0.0) && (tvRear > 0.0)) {
+    // Front and Rear targets detected, compare areas
+    if (taFront > taRear) {
+      m_limelightDriveCmd = -DRIVE_K;
+      m_limelightTurnCmd  = txFront*STEER_K;
+      m_limelightTurnCmd  = clamp(m_limelightTurnCmd, -MAX_STEER, MAX_STEER);
+      LOGGER(INFO) << "Target at Front is larger";
+    } else {
+      m_limelightDriveCmd = DRIVE_K;
+      m_limelightTurnCmd  = txRear*STEER_K;
+      m_limelightTurnCmd  = clamp(m_limelightTurnCmd, -MAX_STEER, MAX_STEER);
+      LOGGER(INFO) << "Target at Rear is larger";
+    }
+    return true;
+  } 
+
+  LOGGER(INFO) << "No Targets";
+  return false;
 }
 
 void Robot::InitializePIDControllers() {

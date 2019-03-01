@@ -30,20 +30,24 @@ class Robot : public frc::TimedRobot {
   void InitializeDashboard();
   void InitializePIDControllers();
   void ReadDashboard();
-  double LimelightTracking();
-  void Run();
+  bool DoLimelightTracking();
+  void OperatorControl();
 
  private:
   static const int leftLeadDeviceID = 7, rightLeadDeviceID = 3, leftFollowDeviceID = 8, rightFollowDeviceID = 4;
   static const int armDeviceID = 1, wristDeviceID = 2, climbArmDeviceID = 5, climbFootDeviceID = 6;
 
   // Network Table
-  std::shared_ptr<NetworkTable> m_table = nt::NetworkTableInstance::GetDefault().GetTable("limelight-front");
-  std::shared_ptr<NetworkTable> m_table2 = nt::NetworkTableInstance::GetDefault().GetTable("limelight-rear");
+  std::shared_ptr<NetworkTable> m_limelightFront = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
+  std::shared_ptr<NetworkTable> m_limelightRear  = nt::NetworkTableInstance::GetDefault().GetTable("limelight-rear");
 
   // Targeting state
   bool m_IsTargeting = false;
 
+  // Throttle values for target-tracking mode based on camera target offset
+  double m_limelightTurnCmd = 0.0;
+  double m_limelightDriveCmd = 0.0;
+ 
   // Pneumatics
   frc::DoubleSolenoid m_gearbox_right{3, 4};
   frc::DoubleSolenoid m_gearbox_left{2, 5};
